@@ -18,15 +18,15 @@
       <p>Entre com suas credenciais para acessar o painel</p>
     </div>
     
-    <form class="login-form">
+    <form class="login-form" method="POST" action="/login">
       <div class="input-group">
         <label for="usuario">Usuário</label>
-        <input type="text" id="usuario" placeholder="Digite seu usuário" required>
+        <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" required>
       </div>
       
       <div class="input-group">
         <label for="senha">Senha</label>
-        <input type="password" id="senha" placeholder="Digite sua senha" required>
+        <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
       </div>
       
       <button type="submit" class="btn-login">Entrar</button>
