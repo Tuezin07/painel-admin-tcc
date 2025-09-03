@@ -61,7 +61,7 @@ app.post('/login', (req, res) => {
     if (results.length > 0) {
       req.session.logado = true;
       req.session.usuario = usuario;
-      res.redirect('/painel');
+      res.redirect('/login');
     } else {
       res.status(401).send('Login inválido. <a href="/">Tentar novamente</a>');
     }
@@ -69,7 +69,7 @@ app.post('/login', (req, res) => {
 });
 
 // Painel (HTML)
-app.get('/painel', (req, res) => {
+app.get('/login', (req, res) => {
   if (!req.session.logado) return res.redirect('/');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
