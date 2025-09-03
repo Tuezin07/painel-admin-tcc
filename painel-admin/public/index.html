@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Compras</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="painel-container">
+        <div class="painel-header">
+            <h1 class="painel-title">Painel de Compras</h1>
+            <a href="/logout" class="btn-logout">Sair</a>
+        </div>
+        
+        <div class="filtros-container">
+            <h2 class="filtros-title">Filtros Avançados</h2>
+            
+            <div class="filtro-grid">
+                <div class="filtro-group">
+                    <label for="ano">Ano</label>
+                    <select id="ano" name="ano">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                
+                <div class="filtro-group">
+                    <label for="mes">Mês</label>
+                    <select id="mes" name="mes" disabled>
+                        <option value="">Selecione</option>
+                    </select>
+                </div>
+                
+                <div class="filtro-group">
+                    <label for="semana">Semana</label>
+                    <select id="semana" name="semana" disabled>
+                        <option value="">Selecione</option>
+                    </select>
+                </div>
+                
+                <div class="filtro-group">
+                    <label for="dia">Dia</label>
+                    <select id="dia" name="dia" disabled>
+                        <option value="">Selecione</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="aplicar-filtro" class="btn-filtrar">Aplicar Filtros</button>
+        </div>
+        
+        <div class="resumo-container">
+            <div class="resumo-card">
+                <h3>Total de Compras</h3>
+                <div class="resumo-valor" id="total-compras">0</div>
+            </div>
+            <div class="resumo-card">
+                <h3>Valor Total</h3>
+                <div class="resumo-valor" id="valor-total">R$ 0,00</div>
+            </div>
+        </div>
+        
+        <div class="tabela-container">
+            <table id="compras-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Data/Hora</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

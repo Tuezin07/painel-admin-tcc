@@ -1,0 +1,151 @@
+:root {
+  --vermelho: #d10000;
+  --vermelho-escuro: #9a0000;
+  --cinza-claro: #f8f8f8;
+  --cinza-medio: #e0e0e0;
+  --cinza-escuro: #333333;
+  --branco: #ffffff;
+  --sombra-suave: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--cinza-claro);
+  color: var(--cinza-escuro);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  background: var(--branco);
+  border-radius: 12px;
+  box-shadow: var(--sombra-suave);
+  overflow: hidden;
+}
+
+.logo-section {
+  display: flex;
+  justify-content: flex-start; 
+  padding: 30px 20px 15px;
+  background: var(--branco);
+  width: 100%;
+  padding-left: 50px; 
+}
+
+.login-logo {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-left: 0px; 
+}
+
+.login-header {
+  padding: 0 30px;
+  text-align: center;
+  margin-bottom: 20px;
+  margin-top: 10px;
+}
+
+.login-header h2 {
+  font-size: 1.5rem;
+  color: var(--vermelho);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-header p {
+  color: var(--cinza-escuro);
+  font-size: 0.95rem;
+}
+
+.login-form {
+  padding: 0 30px 30px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--cinza-medio);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.input-group input:focus {
+  border-color: var(--vermelho);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(209, 0, 0, 0.1);
+}
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background: var(--vermelho);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-login:hover {
+  background: var(--vermelho-escuro);
+}
+
+.login-footer {
+  padding: 20px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--cinza-escuro);
+  border-top: 1px solid var(--cinza-medio);
+}
+
+.login-footer a {
+  color: var(--vermelho);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    border-radius: 8px;
+  }
+  
+  .logo-section {
+    padding: 25px 15px 10px;
+    padding-left: 30px; 
+  }
+  
+  .login-logo {
+    max-width: 220px;
+    margin-left: -8px; 
+  }
+  
+  .login-form {
+    padding: 0 20px 20px;
+  }
+}
