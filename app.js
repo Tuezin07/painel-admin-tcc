@@ -2,41 +2,24 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const mysql = require('mysql2');
+const db = require('./db'); // Conexão com o MySQL (configurada para Railway)
 
 const app = express();
 
-// --- Conexão com MySQL usando variáveis de ambiente do Railway ---
-const db = mysql.createConnection({
-  host: process.env.MYSQLHOST || 'localhost',
-  user: process.env.MYSQLUSER || 'root',
-  password: process.env.MYSQLPASSWORD || '',
-  database: process.env.MYSQLDATABASE || 'caixarapido',
-  port: process.env.MYSQLPORT || 3306
-});
-
-db.connect(err => {
-  if (err) {
-    console.error('Erro ao conectar no MySQL:', err);
-  } else {
-    console.log('Conectado ao banco de dados MySQL!');
-  }
-});
-
-// --- Middlewares ---
+// Receber dados de formulários
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json()); // caso o frontend envie JSON
 
+// Sessão
 app.use(session({
-  secret: 'segredo-supersecreto',
+  secret: 'segredo-supersecreto', // troque se quiser
   resave: false,
   saveUninitialized: true
 }));
 
-// Define pasta pública (CSS, JS, HTML)
+// Pasta pública (CSS, JS, HTML)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Rotas ---
 // Página de login
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -49,7 +32,7 @@ app.post('/login', (req, res) => {
   db.query('SELECT * FROM admins WHERE usuario = ? AND senha = ?', [usuario, senha], (err, results) => {
     if (err) {
       console.error(err);
-      return res.status(500).send('Erro interno do servidor');
+      return res.status(500).send('Erro no servidor.');
     }
 
     if (results.length > 0) {
@@ -61,32 +44,37 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Painel principal (página HTML)
-app.get('/painel', (req, res) => {
+// Middleware para proteger rotas
+function checarLogin(req, res, next) {
   if (!req.session.logado) return res.redirect('/');
+  next();
+}
+
+// Painel de vendas
+app.get('/painel', checarLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// API para buscar compras (usada pelo front-end)
-app.get('/api/compras', (req, res) => {
-  if (!req.session.logado) return res.status(401).json({ erro: 'Não autorizado' });
+// API de compras (retorna JSON)
+app.get('/api/compras', checarLogin, (req, res) => {
+  const { ano, mes, semana, dia } = req.query;
 
-  const ano = req.query.ano;
-  const mes = req.query.mes;
-  const semana = req.query.semana;
-
-  let sql = 'SELECT * FROM venda WHERE 1=1';
+  let sql = 'SELECT * FROM venda';
   const params = [];
+  const filtros = [];
 
-  if (ano) sql += ' AND YEAR(data) = ?' && params.push(ano);
-  if (mes) sql += ' AND MONTH(data) = ?' && params.push(mes);
-  if (semana) sql += ' AND WEEK(data,1) = ?' && params.push(semana);
+  if (ano) filtros.push('YEAR(data) = ?') && params.push(ano);
+  if (mes) filtros.push('MONTH(data) = ?') && params.push(mes);
+  if (semana) filtros.push('WEEK(data, 1) = ?') && params.push(semana);
+  if (dia) filtros.push('DAY(data) = ?') && params.push(dia);
+
+  if (filtros.length > 0) sql += ' WHERE ' + filtros.join(' AND ');
 
   sql += ' ORDER BY data DESC';
 
   db.query(sql, params, (err, results) => {
     if (err) {
-      console.error(err);
+      console.error('Erro ao buscar compras:', err);
       return res.status(500).json({ erro: 'Erro ao carregar dados' });
     }
     res.json(results);
@@ -101,7 +89,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// --- Inicialização do servidor ---
+// Porta do Railway
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
