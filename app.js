@@ -2,22 +2,22 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const db = require('./db'); // Conexão com o MySQL (configurada para Railway)
+const db = require('./db'); // conexão com o MySQL
 
 const app = express();
 
 // Receber dados de formulários
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json()); // caso o frontend envie JSON
+app.use(bodyParser.json());
 
 // Sessão
 app.use(session({
-  secret: 'segredo-supersecreto', // troque se quiser
+  secret: 'segredo-supersecreto',
   resave: false,
   saveUninitialized: true
 }));
 
-// Pasta pública (CSS, JS, HTML)
+// Pasta pública (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Página de login
@@ -30,10 +30,7 @@ app.post('/login', (req, res) => {
   const { usuario, senha } = req.body;
 
   db.query('SELECT * FROM admins WHERE usuario = ? AND senha = ?', [usuario, senha], (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Erro no servidor.');
-    }
+    if (err) return res.status(500).send('Erro no servidor');
 
     if (results.length > 0) {
       req.session.logado = true;
@@ -44,52 +41,56 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Middleware para proteger rotas
-function checarLogin(req, res, next) {
-  if (!req.session.logado) return res.redirect('/');
-  next();
-}
-
-// Painel de vendas
-app.get('/painel', checarLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// API de compras (retorna JSON)
-app.get('/api/compras', checarLogin, (req, res) => {
-  const { ano, mes, semana, dia } = req.query;
-
-  let sql = 'SELECT * FROM venda';
-  const params = [];
-  const filtros = [];
-
-  if (ano) filtros.push('YEAR(data) = ?') && params.push(ano);
-  if (mes) filtros.push('MONTH(data) = ?') && params.push(mes);
-  if (semana) filtros.push('WEEK(data, 1) = ?') && params.push(semana);
-  if (dia) filtros.push('DAY(data) = ?') && params.push(dia);
-
-  if (filtros.length > 0) sql += ' WHERE ' + filtros.join(' AND ');
-
-  sql += ' ORDER BY data DESC';
-
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Erro ao buscar compras:', err);
-      return res.status(500).json({ erro: 'Erro ao carregar dados' });
-    }
-    res.json(results);
-  });
-});
-
 // Logout
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
-    if (err) console.error(err);
+    if (err) return res.status(500).send('Erro ao sair');
     res.redirect('/');
   });
 });
 
-// Porta do Railway
+// Painel de vendas (HTML)
+app.get('/painel', (req, res) => {
+  if (!req.session.logado) return res.redirect('/');
+
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// API para o frontend carregar dados em JSON
+app.get('/api/compras', (req, res) => {
+  if (!req.session.logado) return res.status(401).json({ erro: "Não autorizado" });
+
+  // filtros (ano, mês, semana, etc)
+  const { ano, mes, semana, dia } = req.query;
+  let sql = 'SELECT * FROM venda WHERE 1=1';
+  const params = [];
+
+  if (ano) {
+    sql += ' AND YEAR(data) = ?';
+    params.push(ano);
+  }
+  if (mes) {
+    sql += ' AND MONTH(data) = ?';
+    params.push(mes);
+  }
+  if (semana) {
+    sql += ' AND WEEK(data, 1) = ?';
+    params.push(semana);
+  }
+  if (dia) {
+    sql += ' AND DAY(data) = ?';
+    params.push(dia);
+  }
+
+  sql += ' ORDER BY data DESC';
+
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ erro: "Erro ao carregar dados" });
+    res.json(results);
+  });
+});
+
+// Inicia o servidor
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
