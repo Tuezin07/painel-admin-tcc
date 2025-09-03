@@ -1,4 +1,4 @@
-const express = require('express'); 
+const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -6,17 +6,17 @@ const db = require('./db');
 
 const app = express();
 
-// Permite receber dados de formulários
+// Receber dados de formulários
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Configuração da sessão (mantém usuário logado)
+// Sessão
 app.use(session({
-  secret: 'segredo-supersecreto', // pode trocar por outra string
+  secret: 'segredo-supersecreto',
   resave: false,
   saveUninitialized: true
 }));
 
-// Define a pasta de arquivos públicos (CSS, JS, imagens)
+// Pasta pública (CSS, JS, HTML)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Página de login
@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Processo de login
+// Login
 app.post('/login', (req, res) => {
   const { usuario, senha } = req.body;
 
@@ -40,31 +40,22 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Painel de compras (protegido por login)
+// Painel de vendas
 app.get('/painel', (req, res) => {
-  if (!req.session.logado) {
-    return res.redirect('/');
-  }
+  if (!req.session.logado) return res.redirect('/');
 
   const filtro = req.query.filtro || 'todos';
   let sql = 'SELECT * FROM venda';
   const params = [];
 
-  if (filtro === 'hoje') {
-    sql += ' WHERE DATE(data) = CURDATE()';
-  } else if (filtro === '7dias') {
-    sql += ' WHERE `data` >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
-  } else if (filtro === 'mes') {
-    sql += ' WHERE MONTH(data) = MONTH(CURDATE()) AND YEAR(data) = YEAR(CURDATE())';
-  }
+  if (filtro === 'hoje') sql += ' WHERE DATE(data) = CURDATE()';
+  else if (filtro === '7dias') sql += ' WHERE `data` >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
+  else if (filtro === 'mes') sql += ' WHERE MONTH(data) = MONTH(CURDATE()) AND YEAR(data) = YEAR(CURDATE())';
 
   sql += ' ORDER BY data DESC';
 
   db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Erro ao carregar dados:', err);
-      return res.send('Erro ao carregar dados. Por favor, tente novamente.');
-    }
+    if (err) throw err;
 
     let html = `
       <html>
@@ -74,13 +65,9 @@ app.get('/painel', (req, res) => {
       </head>
       <body>
         <h1>Painel de Compras</h1>
-        <div class="top-buttons">
-          <a href="/logout" class="button">Sair</a>
-        </div>
-      
+        <a href="/logout">Sair</a>
         <form method="GET" action="/painel">
-          <label for="filtro">Filtrar por:</label>
-          <select name="filtro" id="filtro">
+          <select name="filtro">
             <option value="todos">Todos</option>
             <option value="hoje">Hoje</option>
             <option value="7dias">Últimos 7 dias</option>
@@ -88,7 +75,6 @@ app.get('/painel', (req, res) => {
           </select>
           <button type="submit">Aplicar</button>
         </form>
-      
         <table>
           <tr><th>ID</th><th>Data/Hora</th><th>Valor Total</th></tr>
     `;
@@ -102,11 +88,7 @@ app.get('/painel', (req, res) => {
         </tr>`;
     });
 
-    html += `
-        </table>
-      </body>
-      </html>`;
-
+    html += '</table></body></html>';
     res.send(html);
   });
 });
@@ -119,9 +101,8 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Inicia o servidor
-const PORT = process.env.PORT || 3000;
-
+// Porta
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
