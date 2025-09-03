@@ -47,7 +47,7 @@ app.use(session({
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Página de login
-app.get('/', (req, res) => {
+app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
