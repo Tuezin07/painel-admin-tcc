@@ -96,26 +96,25 @@ document.addEventListener('DOMContentLoaded', function() {
     for (const key in filtros) if(filtros[key]) params.append(key,filtros[key]);
 
     try {
-      const res = await fetch(`/api/compras?${params.toString()}`, {
-        credentials: 'same-origin' // ESSENCIAL: envia cookies da sessão
-      });
-
-      if(res.status === 401) {
-        // Se não logado, redireciona pro login
+      const res = await fetch(`/api/compras?${params.toString()}`);
+      
+      if (res.status === 401) {
+        // Usuário não autorizado → redireciona para login
         window.location.href = '/';
         return;
       }
 
-      if(!res.ok) throw new Error('Erro ao carregar dados');
+      if (!res.ok) throw new Error('Erro ao carregar dados');
 
       const data = await res.json();
       atualizarTabela(data.compras);
       atualizarResumo(data.total_compras, data.valor_total);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       alert('Ocorreu um erro ao carregar os dados. Tente novamente.');
     }
   }
+
 
   function atualizarTabela(compras){
     elementos.tabela.innerHTML = '';
