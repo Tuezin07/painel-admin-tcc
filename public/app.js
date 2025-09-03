@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
       option.textContent = i;
       elementos.filtroAno.appendChild(option);
     }
+    elementos.filtroMes.disabled = true;
+    elementos.filtroSemana.disabled = true;
+    elementos.filtroDia.disabled = true;
   }
 
   function atualizarFiltros() {
@@ -33,14 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
       elementos.filtroMes.disabled = !this.value;
       elementos.filtroSemana.disabled = true;
       elementos.filtroDia.disabled = true;
-      preencherMeses(this.value);
+      if (this.value) preencherMeses(this.value);
     } else if (this.id === 'mes') {
       elementos.filtroSemana.disabled = !this.value;
       elementos.filtroDia.disabled = true;
-      preencherSemanas(elementos.filtroAno.value, this.value);
+      if (this.value) preencherSemanas(elementos.filtroAno.value, this.value);
     } else if (this.id === 'semana') {
       elementos.filtroDia.disabled = !this.value;
-      preencherDias(elementos.filtroAno.value, elementos.filtroMes.value, this.value);
+      if (this.value) preencherDias(elementos.filtroAno.value, elementos.filtroMes.value, this.value);
     }
   }
 
@@ -91,11 +94,20 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     const params = new URLSearchParams();
     for (const key in filtros) if(filtros[key]) params.append(key,filtros[key]);
+
     try {
       const res = await fetch(`/api/compras?${params.toString()}`, {
-        credentials: 'same-origin' // envia o cookie da sessão para a API
+        credentials: 'same-origin' // ESSENCIAL: envia cookies da sessão
       });
+
+      if(res.status === 401) {
+        // Se não logado, redireciona pro login
+        window.location.href = '/';
+        return;
+      }
+
       if(!res.ok) throw new Error('Erro ao carregar dados');
+
       const data = await res.json();
       atualizarTabela(data.compras);
       atualizarResumo(data.total_compras, data.valor_total);
@@ -113,13 +125,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     compras.forEach(c=>{
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${c.id}</td><td>${new Date(c.data).toLocaleString()}</td><td>R$ ${parseFloat(c.valor_total).toFixed(2)}</td>`;
+      row.innerHTML = `<td>${c.id}</td>
+                       <td>${formatarData(c.data)} ${formatarHora(c.data)}</td>
+                       <td>R$ ${formatarValor(c.valor_total)}</td>`;
       elementos.tabela.appendChild(row);
     });
   }
 
   function atualizarResumo(total, valor){
     elementos.totalCompras.textContent = total||'0';
-    elementos.valorTotal.textContent = `R$ ${parseFloat(valor||0).toFixed(2)}`;
+    elementos.valorTotal.textContent = `R$ ${formatarValor(valor||0)}`;
+  }
+
+  // Formatação
+  function formatarData(dataString){
+    return new Date(dataString).toLocaleDateString('pt-BR');
+  }
+
+  function formatarHora(dataString){
+    return new Date(dataString).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  }
+
+  function formatarValor(valor){
+    return parseFloat(valor||0).toFixed(2).replace('.', ',');
   }
 });

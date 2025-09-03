@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require('mysql2');
@@ -9,16 +10,6 @@ const app = express();
 // Receber dados de formulários e JSON
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-// Sessão
-app.use(session({
-  secret: 'segredo-supersecreto',
-  resave: false,
-  saveUninitialized: true
-}));
-
-// Pasta pública (CSS, JS, imagens)
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Conexão MySQL usando variáveis de ambiente do Railway
 const db = mysql.createConnection({
@@ -37,6 +28,24 @@ db.connect(err => {
   }
 });
 
+// Configuração do store de sessão no MySQL
+const sessionStore = new MySQLStore({}, db.promise());
+
+// Sessão
+app.use(session({
+  key: 'session_cookie_name',
+  secret: 'segredo-supersecreto',
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000 // 1 dia
+  }
+}));
+
+// Pasta pública (CSS, JS, imagens)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Página de login
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -51,6 +60,7 @@ app.post('/login', (req, res) => {
 
     if (results.length > 0) {
       req.session.logado = true;
+      req.session.usuario = usuario;
       res.redirect('/painel');
     } else {
       res.status(401).send('Login inválido. <a href="/">Tentar novamente</a>');
