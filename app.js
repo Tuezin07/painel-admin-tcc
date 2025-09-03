@@ -2,23 +2,41 @@ const express = require('express');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const db = require('./db');
+const mysql = require('mysql2');
 
 const app = express();
 
-// Receber dados de formulários
-app.use(bodyParser.urlencoded({ extended: true }));
+// --- Conexão com MySQL usando variáveis de ambiente do Railway ---
+const db = mysql.createConnection({
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || '',
+  database: process.env.MYSQLDATABASE || 'caixarapido',
+  port: process.env.MYSQLPORT || 3306
+});
 
-// Sessão
+db.connect(err => {
+  if (err) {
+    console.error('Erro ao conectar no MySQL:', err);
+  } else {
+    console.log('Conectado ao banco de dados MySQL!');
+  }
+});
+
+// --- Middlewares ---
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 app.use(session({
   secret: 'segredo-supersecreto',
   resave: false,
   saveUninitialized: true
 }));
 
-// Pasta pública (CSS, JS, HTML)
+// Define pasta pública (CSS, JS, HTML)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// --- Rotas ---
 // Página de login
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -29,7 +47,10 @@ app.post('/login', (req, res) => {
   const { usuario, senha } = req.body;
 
   db.query('SELECT * FROM admins WHERE usuario = ? AND senha = ?', [usuario, senha], (err, results) => {
-    if (err) throw err;
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Erro interno do servidor');
+    }
 
     if (results.length > 0) {
       req.session.logado = true;
@@ -40,68 +61,47 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Painel de vendas
+// Painel principal (página HTML)
 app.get('/painel', (req, res) => {
   if (!req.session.logado) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-  const filtro = req.query.filtro || 'todos';
-  let sql = 'SELECT * FROM venda';
+// API para buscar compras (usada pelo front-end)
+app.get('/api/compras', (req, res) => {
+  if (!req.session.logado) return res.status(401).json({ erro: 'Não autorizado' });
+
+  const ano = req.query.ano;
+  const mes = req.query.mes;
+  const semana = req.query.semana;
+
+  let sql = 'SELECT * FROM venda WHERE 1=1';
   const params = [];
 
-  if (filtro === 'hoje') sql += ' WHERE DATE(data) = CURDATE()';
-  else if (filtro === '7dias') sql += ' WHERE `data` >= DATE_SUB(NOW(), INTERVAL 7 DAY)';
-  else if (filtro === 'mes') sql += ' WHERE MONTH(data) = MONTH(CURDATE()) AND YEAR(data) = YEAR(CURDATE())';
+  if (ano) sql += ' AND YEAR(data) = ?' && params.push(ano);
+  if (mes) sql += ' AND MONTH(data) = ?' && params.push(mes);
+  if (semana) sql += ' AND WEEK(data,1) = ?' && params.push(semana);
 
   sql += ' ORDER BY data DESC';
 
   db.query(sql, params, (err, results) => {
-    if (err) throw err;
-
-    let html = `
-      <html>
-      <head>
-        <link rel="stylesheet" href="/css/style.css">
-        <title>Painel de Compras</title>
-      </head>
-      <body>
-        <h1>Painel de Compras</h1>
-        <a href="/logout">Sair</a>
-        <form method="GET" action="/painel">
-          <select name="filtro">
-            <option value="todos">Todos</option>
-            <option value="hoje">Hoje</option>
-            <option value="7dias">Últimos 7 dias</option>
-            <option value="mes">Mês atual</option>
-          </select>
-          <button type="submit">Aplicar</button>
-        </form>
-        <table>
-          <tr><th>ID</th><th>Data/Hora</th><th>Valor Total</th></tr>
-    `;
-
-    results.forEach(compra => {
-      html += `
-        <tr>
-          <td>${compra.id}</td>
-          <td>${new Date(compra.data).toLocaleString()}</td>
-          <td>R$ ${parseFloat(compra.valor_total).toFixed(2)}</td>
-        </tr>`;
-    });
-
-    html += '</table></body></html>';
-    res.send(html);
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ erro: 'Erro ao carregar dados' });
+    }
+    res.json(results);
   });
 });
 
 // Logout
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
-    if (err) throw err;
+    if (err) console.error(err);
     res.redirect('/');
   });
 });
 
-// Porta
+// --- Inicialização do servidor ---
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
