@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Administrativo</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo-section">
+      <img src="logo2.png" alt="Logo do Sistema" class="login-logo">
+    </div>
+    
+    <div class="login-header">
+      <h2>Acesso Administrativo</h2>
+      <p>Entre com suas credenciais para acessar o painel</p>
+    </div>
+    
+    <form class="login-form" method="POST" action="/login">
+      <div class="input-group">
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="usuario" placeholder="Digite seu usuário" required>
+      </div>
+      
+      <div class="input-group">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
+      </div>
+      
+      <button type="submit" class="btn-login">Entrar</button>
+    </form>
+
+    <div class="login-footer">
+      <p>Problemas para acessar? <a href="#">Contate o suporte</a></p>
+    </div>
+  </div>
+</body>
+</html>

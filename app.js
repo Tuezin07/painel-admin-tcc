@@ -3,52 +3,33 @@ const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const bodyParser = require('body-parser');
 const path = require('path');
-const mysql = require('mysql2');
+const db = require('./db');
 
 const app = express();
 
-// Receber dados de formulários e JSON
+// Body parser
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Conexão MySQL usando variáveis de ambiente do Railway
-const db = mysql.createConnection({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQL_ROOT_PASSWORD,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 3306
-});
-
-db.connect(err => {
-  if (err) {
-    console.error('Erro ao conectar no MySQL:', err);
-  } else {
-    console.log('Conectado ao banco de dados MySQL do Railway!');
-  }
-});
-
-// Configuração do store de sessão no MySQL
+// Sessão persistente
 const sessionStore = new MySQLStore({}, db.promise());
-
-// Sessão
 app.use(session({
-  key: 'session_cookie_name',
+  key: 'sessao_painel',
   secret: 'segredo-supersecreto',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000 // 1 dia
-  }
+  cookie: { maxAge: 1000 * 60 * 60 } // 1 hora
 }));
 
-// Pasta pública (CSS, JS, imagens)
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir arquivos estáticos (CSS)
+app.use(express.static(__dirname));
+
+// === ROTAS ===
 
 // Página de login
 app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 // Login
@@ -60,21 +41,28 @@ app.post('/login', (req, res) => {
 
     if (results.length > 0) {
       req.session.logado = true;
-      req.session.usuario = usuario;
-      res.redirect('/login');
+      res.redirect('/painel');
     } else {
-      res.status(401).send('Login inválido. <a href="/">Tentar novamente</a>');
+      res.status(401).send('Login inválido. <a href="/login">Tentar novamente</a>');
     }
   });
 });
 
-// Painel (HTML)
-app.get('/login', (req, res) => {
-  if (!req.session.logado) return res.redirect('/');
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Logout
+app.get('/logout', (req, res) => {
+  req.session.destroy(err => {
+    if (err) console.error(err);
+    res.redirect('/login');
+  });
 });
 
-// API para compras
+// Painel
+app.get('/painel', (req, res) => {
+  if (!req.session.logado) return res.redirect('/login');
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// API de compras
 app.get('/api/compras', (req, res) => {
   if (!req.session.logado) return res.status(401).json({ error: 'Não autorizado' });
 
@@ -96,14 +84,6 @@ app.get('/api/compras', (req, res) => {
     const valorTotal = results.reduce((acc, r) => acc + parseFloat(r.valor_total), 0);
 
     res.json({ compras: results, total_compras: totalCompras, valor_total: valorTotal });
-  });
-});
-
-// Logout
-app.get('/logout', (req, res) => {
-  req.session.destroy(err => {
-    if (err) console.error(err);
-    res.redirect('/');
   });
 });
 

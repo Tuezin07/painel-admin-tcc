@@ -1,20 +1,16 @@
 {
-  "name": "painel-admin",
+  "name": "painel-admin-tcc",
   "version": "1.0.0",
-  "description": "",
+  "description": "Painel Administrativo de Compras",
   "main": "app.js",
   "scripts": {
-    "start": "node painel-admin/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "express": "^5.1.0",
-    "express-mysql-session": "^3.0.3",
-    "express-session": "^1.18.1",
-    "mysql2": "^3.14.1"
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "express-mysql-session": "^2.1.7",
+    "express-session": "^1.17.3",
+    "mysql2": "^3.6.0"
   }
 }
